@@ -1,10 +1,9 @@
 import validators
 from monitor import Monitor
 from stats import StatConsumer
-from concurrent.futures import ThreadPoolExecutor, wait
+from concurrent.futures import ThreadPoolExecutor
 import queue
 import signal
-import time
 
 
 class ServiceExit(Exception):
@@ -16,7 +15,7 @@ class ServiceExit(Exception):
 
 
 def service_shutdown(signum, frame):
-    print('Closing application properly ...')
+    print(' Closing application properly ...')
     raise ServiceExit
 
 
@@ -48,16 +47,14 @@ def main():
     consumers = []
     consumers.append(StatConsumer(pipeline))
 
-    with ThreadPoolExecutor(max_workers=4) as executor:
-        try:
+    try:
+        with ThreadPoolExecutor(max_workers=4) as executor:
             executor.submit(monitors[0].start)
             executor.submit(consumers[0].consume)
-            while True:
-                time.sleep(.5)
 
-        except ServiceExit:
-            monitors[0].stop()
-            consumers[0].stop()
+    except ServiceExit:
+        monitors[0].stop()
+        consumers[0].stop()
 
     print("Goodbye !")
 

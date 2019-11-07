@@ -1,8 +1,7 @@
 import validators
 from monitor import Monitor
-from stats import StatConsumer
+from stats import StatDisplay, Stats
 from concurrent.futures import ThreadPoolExecutor
-import queue
 import signal
 
 
@@ -40,21 +39,26 @@ def main():
         print("The input is not a strictly positive integer. Exiting the program. ")
         return
 
-    pipeline = queue.Queue()
-
+    stat2m = Stats(120)
+    stat10m = Stats(600)
     monitors = []
-    monitors.append(Monitor(url, interval,  pipeline))
+    monitors.append(Monitor(url, interval,  [stat2m, stat10m]))
     consumers = []
-    consumers.append(StatConsumer(pipeline))
+    consumers.append(StatDisplay(stat2m, 10))
+    consumers.append(StatDisplay(stat10m, 60))
 
     try:
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            executor.submit(monitors[0].start)
-            executor.submit(consumers[0].consume)
+        with ThreadPoolExecutor() as executor:
+            for m in monitors:
+                executor.submit(m.start)
+            for c in consumers:
+                executor.submit(c.display)
 
     except ServiceExit:
-        monitors[0].stop()
-        consumers[0].stop()
+        for m in monitors:
+            m.stop()
+        for c in consumers:
+            c.stop()
 
     print("Goodbye !")
 

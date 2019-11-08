@@ -1,52 +1,45 @@
-import threading
-from time import time, sleep
+from threading import Lock
+from time import time
 from collections import Counter
-
-
-class StatDisplay:
-    def __init__(self, stat_provider, delay):
-        self.stat_provider = stat_provider
-        self.stopping = threading.Event()
-        self.delay = delay
-
-    def stop(self):
-        self.stopping.set()
-
-    def display(self):
-        origin_time = time()
-        while not self.stopping.is_set():
-            if time() - origin_time > self.delay:
-                origin_time = time()
-                result = self.stat_provider.get_stats()
-                if not result is None:
-                    print('Over timeframe of {}s, availability = {:.1f}%, max response time = {:.3f}s, avg response time = {:.3f}s, codes count = {}'.format(
-                        *result))
-            else:
-                sleep(0.1)
-        return None
 
 
 class Stats:
     def __init__(self, timeframe):
         self.timeframe = timeframe
-        self.lock = threading.Lock()
+        self.lock = Lock()
         self.data = []
+
+    def _get_data_in_timeframe(self):
+        t = time()
+        recent_data = []
+
+        with self.lock:
+            timeframe = self.timeframe
+
+            if len(self.data) == 0:
+                return None
+
+            for d in self.data:
+                if t - d["timestamp"] < self.timeframe:
+                    recent_data.append(d)
+            self.data = recent_data
+
+        return recent_data
 
     def _compute_stats(self):
         t = time()
         recent_data = []
 
-        self.lock.acquire()
-        timeframe = self.timeframe
+        with self.lock:
+            timeframe = self.timeframe
 
-        if len(self.data) == 0:
-            return None
+            if len(self.data) == 0:
+                return None
 
-        for d in self.data:
-            if t - d["timestamp"] < self.timeframe:
-                recent_data.append(d)
-        self.data = recent_data
-        self.lock.release()
+            for d in self.data:
+                if t - d["timestamp"] < self.timeframe:
+                    recent_data.append(d)
+            self.data = recent_data
 
         availability = 0
         response_times = []
@@ -68,7 +61,26 @@ class Stats:
     def get_stats(self):
         return self._compute_stats()
 
+    def get_availability(self):
+        t = time()
+        recent_data = []
+        with self.lock:
+            timeframe = self.timeframe
+
+            if len(self.data) == 0:
+                return None
+
+            for d in self.data:
+                if t - d["timestamp"] < self.timeframe:
+                    recent_data.append(d)
+            self.data = recent_data
+
+        availability = 0
+        for d in recent_data:
+            if d["request_success"] and d["status_code"] < 500:
+                availability += 1
+        return availability * 100 / len(recent_data)
+
     def add_data(self, data):
-        self.lock.acquire()
-        self.data.append(data)
-        self.lock.release()
+        with self.lock:
+            self.data.append(data)

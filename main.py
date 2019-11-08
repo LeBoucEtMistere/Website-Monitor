@@ -1,6 +1,8 @@
 import validators
 from monitor import Monitor
-from stats import StatDisplay, Stats
+from stats import Stats
+from display import StatDisplay
+from alert import Alert
 from concurrent.futures import ThreadPoolExecutor
 import signal
 
@@ -25,9 +27,11 @@ def main():
 
     print("Website monitoring tool")
     url = input("please enter the url of the website you want to monitor: ")
-    if not validators.url(url):
-        print("Url entered is not a valid url. Exiting the program.")
+    if not validators.url(url) and not validators.domain(url):
+        print("Url entered is not a valid url or doamin name. Exiting the program.")
         return
+    if not validators.url(url):
+        url = 'http://' + url
     interval = input("please enter the checking interval in seconds: ")
     try:
         interval = int(interval)
@@ -46,15 +50,18 @@ def main():
     consumers = []
     consumers.append(StatDisplay(stat2m, 10))
     consumers.append(StatDisplay(stat10m, 60))
+    alert = Alert(stat2m, interval, url)
 
     try:
         with ThreadPoolExecutor() as executor:
             for m in monitors:
-                executor.submit(m.start)
+                executor.submit(m.run)
             for c in consumers:
-                executor.submit(c.display)
+                executor.submit(c.run)
+            executor.submit(alert.run)
 
     except ServiceExit:
+        alert.stop()
         for m in monitors:
             m.stop()
         for c in consumers:

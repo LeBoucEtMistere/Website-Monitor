@@ -16,9 +16,9 @@ class Alert(Task):
 
         if not self.flag_alert and availability < 80:
             self.flag_alert = True
-            print("Website {} is down. availability={}%, time={}".format(
+            print("!!! Alert !!! Website {} is down. availability={}%, time={}".format(
                 self.website, availability, datetime.now()))
         if self.flag_alert and availability >= 80:
             self.flag_alert = False
-            print("Website {} recovered. availability={}%, time={}".format(
+            print("!!! Alert !!! Website {} recovered. availability={}%, time={}".format(
                 self.website, availability, datetime.now()))

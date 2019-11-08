@@ -13,33 +13,19 @@ class Stats:
         t = time()
         recent_data = []
 
-        with self.lock:
-            timeframe = self.timeframe
+        if len(self.data) == 0:
+            return None
 
-            if len(self.data) == 0:
-                return None
-
-            for d in self.data:
-                if t - d["timestamp"] < self.timeframe:
-                    recent_data.append(d)
-            self.data = recent_data
+        for d in self.data:
+            if t - d["timestamp"] < self.timeframe:
+                recent_data.append(d)
+        self.data = recent_data
 
         return recent_data
 
-    def _compute_stats(self):
-        t = time()
-        recent_data = []
-
+    def get_stats(self):
         with self.lock:
-            timeframe = self.timeframe
-
-            if len(self.data) == 0:
-                return None
-
-            for d in self.data:
-                if t - d["timestamp"] < self.timeframe:
-                    recent_data.append(d)
-            self.data = recent_data
+            recent_data = self._get_data_in_timeframe()
 
         availability = 0
         response_times = []
@@ -54,27 +40,15 @@ class Stats:
                 codes.append(d["status_code"])
 
         if availability == 0:
-            return timeframe, 0., 0., 0., None
+            return self.timeframe, 0., 0., 0., None
 
-        return timeframe, availability * 100 / len(recent_data), max(response_times), sum(response_times)/len(response_times), Counter(codes)
-
-    def get_stats(self):
-        return self._compute_stats()
+        return self.timeframe, availability * 100 / len(recent_data), max(response_times), sum(response_times)/len(response_times), Counter(codes)
 
     def get_availability(self):
-        t = time()
-        recent_data = []
         with self.lock:
-            timeframe = self.timeframe
-
-            if len(self.data) == 0:
-                return None
-
-            for d in self.data:
-                if t - d["timestamp"] < self.timeframe:
-                    recent_data.append(d)
-            self.data = recent_data
-
+            recent_data = self._get_data_in_timeframe()
+        if recent_data is None:
+            return None
         availability = 0
         for d in recent_data:
             if d["request_success"] and d["status_code"] < 500:

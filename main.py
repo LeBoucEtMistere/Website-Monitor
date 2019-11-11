@@ -2,6 +2,7 @@ import validators
 from pipeline import Pipeline
 import signal
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 
 
 class ServiceExit(Exception):
@@ -18,7 +19,7 @@ def service_shutdown(signum, frame):
 
 
 def main():
-
+    # Create a parser for the arguments and defining them
     parser = argparse.ArgumentParser(prog='main.py',
                                      usage='%(prog)s [options] websites',
                                      description='Monitor a given website at a given frequency and prints useful stats about it.')
@@ -29,43 +30,53 @@ def main():
                         help='a list of websites separated by commas')
     parser.add_argument('-i',
                         '--interval',
-                        help='the interval in seconds at which the sites must be monitored',
+                        help='the interval in seconds at which the sites must be monitored, default is 1 second',
                         nargs='?', const=1, type=int)
-    args = parser.parse_args()
-    print(args)
 
+    # Parse the args
+    args = parser.parse_args()
     urls = args.websites.split(',')
-    interval = int(args.interval)
+
+    # Check if args are well formated
+    if args.interval is None:
+        interval = 1
+    else:
+        interval = int(args.interval)
 
     if interval <= 0:
         print('Invalid negative or null interval time used')
         return
 
-    for url in urls:
+    for i in range(len(urls)):
 
-        if not validators.url(url) and not validators.domain(url):
+        if not validators.url(urls[i]) and not validators.domain(urls[i]):
             print(
-                "Url entered is not a valid url or domain name ({}). Exiting the program.".format(url))
+                "Url entered is not a valid url or domain name ({}). Exiting the program.".format(urls[i]))
             return
-        if not validators.url(url):
-            url = 'http://' + url
+        if not validators.url(urls[i]):
+            urls[i] = 'http://' + urls[i]
 
-    print(urls)
-    print(interval)
-
+    # redirect SIGTERM and SIGINT signals to stop program
     signal.signal(signal.SIGTERM, service_shutdown)
     signal.signal(signal.SIGINT, service_shutdown)
+
+    pipelines = []
     print("Starting the monitoring process, press CTRL+C to exit program.")
     try:
+        with ThreadPoolExecutor() as executor:
+            for url in urls:
+                # Create a pipeline for each url and start it
+                p = Pipeline(url, interval)
+                p.add_stat(120, 10, True)
+                p.add_stat(600, 60, False)
 
-        p = Pipeline(url, interval)
-        p.add_stat(120, 10, True)
-        p.add_stat(600, 60, False)
+                p.run(executor)
+                pipelines.append(p)
 
-        p.run()
-
+    # catch SIGTERM and SIGINT signals to stop program properly
     except ServiceExit:
-        p.stop()
+        for p in pipelines:
+            p.stop()
 
     print("Goodbye !")
 

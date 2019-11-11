@@ -2,7 +2,6 @@ from monitor import Monitor
 from stats import Stats
 from display import StatDisplay
 from alert import Alert
-from concurrent.futures import ThreadPoolExecutor
 
 
 class Pipeline:
@@ -22,11 +21,10 @@ class Pipeline:
             self.tasks.append(
                 Alert(self.stats[-1], self.monitoring_interval, self.url))
 
-    def run(self):
+    def run(self, executor):
         print("Launching pipeline for website {}".format(self.url))
-        with ThreadPoolExecutor() as executor:
-            for t in self.tasks:
-                executor.submit(t.run)
+        for t in self.tasks:
+            executor.submit(t.run)
 
     def stop(self):
         print("Stopping pipeline for website {}".format(self.url))

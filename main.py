@@ -3,6 +3,7 @@ from monitor import Monitor
 from stats import Stats
 from display import StatDisplay
 from alert import Alert
+from pipeline import Pipeline
 from concurrent.futures import ThreadPoolExecutor
 import signal
 
@@ -22,9 +23,6 @@ def service_shutdown(signum, frame):
 
 def main():
 
-    signal.signal(signal.SIGTERM, service_shutdown)
-    signal.signal(signal.SIGINT, service_shutdown)
-
     print("Website monitoring tool")
     url = input("please enter the url of the website you want to monitor: ")
     if not validators.url(url) and not validators.domain(url):
@@ -43,29 +41,18 @@ def main():
         print("The input is not a strictly positive integer. Exiting the program. ")
         return
 
-    stat2m = Stats(120)
-    stat10m = Stats(600)
-    monitors = []
-    monitors.append(Monitor(url, interval,  [stat2m, stat10m]))
-    consumers = []
-    consumers.append(StatDisplay(stat2m, 10))
-    consumers.append(StatDisplay(stat10m, 60))
-    alert = Alert(stat2m, interval, url)
+    signal.signal(signal.SIGTERM, service_shutdown)
+    signal.signal(signal.SIGINT, service_shutdown)
 
     try:
-        with ThreadPoolExecutor() as executor:
-            for m in monitors:
-                executor.submit(m.run)
-            for c in consumers:
-                executor.submit(c.run)
-            executor.submit(alert.run)
+        p = Pipeline(url, interval)
+        p.add_stat(120, 10, True)
+        p.add_stat(600, 60, False)
+
+        p.run()
 
     except ServiceExit:
-        alert.stop()
-        for m in monitors:
-            m.stop()
-        for c in consumers:
-            c.stop()
+        p.stop()
 
     print("Goodbye !")
 

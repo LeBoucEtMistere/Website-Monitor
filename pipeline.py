@@ -16,7 +16,8 @@ class Pipeline:
 
     def add_stat(self, timeframe, display_interval, should_alert):
         self.stats.append(Stats(timeframe))
-        self.tasks.append(StatDisplay(self.stats[-1], display_interval))
+        self.tasks.append(StatDisplay(
+            self.url, self.stats[-1], display_interval))
         if should_alert:
             self.tasks.append(
                 Alert(self.stats[-1], self.monitoring_interval, self.url))

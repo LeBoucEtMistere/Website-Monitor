@@ -21,19 +21,21 @@ class Pipeline:
         self.tasks.append(
             Monitor(self.url, self.monitoring_interval, self.stats))
 
-    def add_stat(self, timeframe, display_interval, should_alert):
+    def add_stat(self, timeframe, should_display, display_interval, should_alert):
         """ Add a stat object to the pipelien to hold data over a specific time period.
         It lets the user display it at a regular rate and enable alerts for this timeframe.
 
         Parameters:
             timeframe (int): The timeframe over which the stats should be computed. in seconds
+            should_display (bool): A boolean that enables the displaying for these stats.
             display_interval (int): The interval in seconds there should be between each diplay of the stats
             should_alert (bool): A boolean that enables the alerting for these stats, over the same timeframe.
 
         """
         self.stats.append(Stats(timeframe))
-        self.tasks.append(StatDisplay(
-            self.url, self.stats[-1], display_interval))
+        if should_display:
+            self.tasks.append(StatDisplay(
+                self.url, self.stats[-1], display_interval))
         if should_alert:
             self.tasks.append(
                 Alert(self.stats[-1], self.monitoring_interval, self.url))

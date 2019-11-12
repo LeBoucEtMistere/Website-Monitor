@@ -29,7 +29,7 @@ But it has several limitations. Even tough its modern library ```concurrent.futu
 That said, as most of the program is not CPU intensive but waiting for I/O, that performance difference is not as important and comforted my choice of language for a first iteration.
 In order to solve that issue, I would turn to a more system-friendly language as Rust or Go. I used Rust a bit and was impressed with the ease it has to deal with threaded programs and avoid by design data races and deadlocks. Had I been more fluent with Rust, I think I would have used it for this project.
 
-Another step would be to had even more modularity in the code. I wanted to be as modular as possible so I implemented the concept of pipelines where many tasks cohabit and operate on the same data. Currently, the pipeline can be composed of a monitor, the corner stone that polls websites and create data points, a display that prints statistics in the console at regular intervals, and an alert that monitors the state of the availability statistics over a particular timeframe.
+Another step would be to had even more modularity in the code. I wanted it to be as modular as possible so I implemented the concept of pipelines where many tasks cohabit and operate on the same data. Currently, the pipeline can be composed of a monitor, the corner stone that polls websites and create data points, a display that prints statistics in the console at regular intervals, and an alert that monitors the state of the availability statistics over a particular timeframe.
 This pipeline structures already allows the program to easily monitor multiple websites at the same time.
 One could improve this system and extend its functionnalities simply by adding new tasks to the pipeline. Examples could be:
 - a task that saves datapoints in a local database, e.g. sqlite.
@@ -39,6 +39,8 @@ etc.
 
 The design I choosed make these additions easy as the developper only needs to derive another child class from the class Task.
 Currently, the only statistic that is monitored is the availability, but the Alert class could be modified to allow the user to choose which statistics he wants to be monitored and alerted precisely.
+
+There is also room for improvement regarding the completeness of the data points. Here the data is not very refined, if the website does not respond, it yields the same data point as if it responded with a 500+ status_code for example. I think more precise data can be gathered with few modifications. The data points could also be represented with a custom class instead of a simple dictionnary to reinforce semantics in the program.
 
 A last improvement that could be made would be to improve the display. Actually there is a lot that can be done to improve this. The use of a console library such as ncurses would allow the program to persist alert on the display and only show the latest statistics, without the need for the user to scroll. It would also enable the use of keyboards events, and let the user use keys to pause the monitoring for instance, or show a particular stat on a particular website. The top thing would be to add a graphic display of the stats, like a plot of the availability timeseries or an histogram of the status_code counts.
 

@@ -4,12 +4,27 @@ from collections import Counter
 
 
 class Stats:
+    """ An object that holds data over a specific timeframe and computes stats on this data.
+    It can be accessed from multiple threads safely. 
+    """
+
     def __init__(self, timeframe):
+        """ the constructor of the class
+
+        Parameters:
+            timeframe (int): The timeframe in seconds over which it computes the stats
+        """
         self.timeframe = timeframe
         self.lock = Lock()
         self.data = []
 
     def _get_data_in_timeframe(self):
+        """ A method that return the data points inside the timeframe and clean the internal data list from the older data points.
+
+        Returns:
+            recent_data (list<dict>): The data that falls inside the timeframe.
+
+        """
         t = time()
         recent_data = []
 
@@ -24,6 +39,12 @@ class Stats:
         return recent_data
 
     def get_stats(self):
+        """ A method that computes and returns the current stats over the timeframe.
+
+        Returns:
+            t (tuple): The stats including in this order: timeframe, percentage of availability, max response time, avg response time, a Counter of status_codes
+
+        """
         with self.lock:
             recent_data = self._get_data_in_timeframe()
 
@@ -45,6 +66,12 @@ class Stats:
         return self.timeframe, availability * 100 / len(recent_data), max(response_times), sum(response_times)/len(response_times), Counter(codes)
 
     def get_availability(self):
+        """ A method that computes and returns the current availability over the timeframe.
+
+        Returns:
+            availability (int): The percentage of availability over the timeframe.
+
+        """
         with self.lock:
             recent_data = self._get_data_in_timeframe()
         if recent_data is None:
@@ -56,5 +83,11 @@ class Stats:
         return availability * 100 / len(recent_data)
 
     def add_data(self, data):
+        """ A method that adds data to the stat object, in a thread safe way.
+
+        Parameters:
+            data (dict): A dictionnary representing a data point.
+
+        """
         with self.lock:
             self.data.append(data)

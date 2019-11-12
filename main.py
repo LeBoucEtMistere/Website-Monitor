@@ -67,8 +67,8 @@ def main():
             for url in urls:
                 # Create a pipeline for each url and start it
                 p = Pipeline(url, interval)
-                p.add_stat(120, 10, True)
-                p.add_stat(600, 60, False)
+                p.add_stat(600, 10, True)
+                p.add_stat(3600, 60, False)
 
                 p.run(executor)
                 pipelines.append(p)

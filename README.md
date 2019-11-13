@@ -38,7 +38,9 @@ One could improve this system and extend its functionnalities simply by adding n
 etc.
 
 The design I choosed make these additions easy as the developper only needs to derive another child class from the class Task.
+
 Currently, the only statistic that is monitored is the availability, but the Alert class could be modified to allow the user to choose which statistics he wants to be monitored and alerted precisely.
+The alerting job could be further improved with some machine learning on the data to ease the user experience. I am thinking about creating a density model from the data and automatically detecting anomalies in the distribution of point regarding this model to spot downtimes without having the user to specify a particular threshold on a particular metric. Here, as we only watch a few metrics that are higly correlated, it is still easy to detect anomalies with a single measure, but if we augment the dimentionality of our data, it would be nice to have such a feature.
 
 There is also room for improvement regarding the completeness of the data points. Here the data is not very refined, if the website does not respond, it yields the same data point as if it responded with a 500+ status_code for example. I think more precise data can be gathered with few modifications. The data points could also be represented with a custom class instead of a simple dictionnary to reinforce semantics in the program.
 
